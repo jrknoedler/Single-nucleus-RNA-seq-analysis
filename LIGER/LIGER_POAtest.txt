@@ -1,0 +1,47 @@
+#!/usr/bin/env Rscript
+
+
+
+output <- "LIGERoutput/POA/POA_Liger_mk1"
+library(liger)
+library(Seurat)
+library(SeuratData)
+library(SeuratWrappers)
+library(cowplot)
+
+Primed <- readRDS("Seurat/POA_IndependentAnalysis/POA_IndependentFiltered2_30pcs_res1_Primed.rds")
+Male <- readRDS("Seurat/POA_IndependentAnalysis/POA_IndependentFiltered7_40pcs_res1.5_Intact.rds")
+Unprimed <- readRDS("Seurat/POA_IndependentAnalysis/POA_IndependentFiltered2_30pcs_Unprimed_res1_Unprimed.rds")
+Male$sex <- "Male"
+Male$Hormone <- "Intact"
+Primed$sex <- "Female"
+Primed$Hormone <- "Primed"
+Unprimed$sex <- "Female"
+Unprimed$Hormone <- "Unprimed"
+
+Primed_Mat <- Primed@assays[["RNA"]]@counts
+Primed_Mat <- as.matrix(Primed_Mat)
+Male_Mat <- Male@assays[["RNA"]]@counts
+Male_Mat <- as.matrix(Male_Mat)
+Unprimed_Mat <- Unprimed@assays[["RNA"]]@counts
+Unprimed_Mat <- as.matrix(Unprimed_Mat)
+
+liger <- createLiger(list(Male=Male_Mat, Primed=Primed_Mat, Unprimed=Unprimed_Mat))
+
+liger <- normalize(liger)
+liger <- selectGenes(liger)
+liger <- scaleNotCenter(liger)
+liger <- optimizeALS(liger, k=20)
+
+liger <- quantile_norm(liger)
+
+liger <- runUMAP(liger, distance='cosine', n_neighbors=30, min_dist=0.3)
+
+pdf(file=paste0(output,"_umap.pdf"))
+all.plots <- plotByDatasetAndCluster(liger, axis.labels=c('UMAP 1', 'UMAP 2'), return.plots=T)
+all.plots[[1]] + all.plots[[2]]
+dev.off()
+pdf(file=paste0(output,"_loadings.pdf"))
+gene_loadings <- plotGeneLoadings(liger, do.spec.plot=FALSE, return.plots=TRUE)
+gene_loadings[[1]]+gene.loadings[[2]]+gene.loadings[[3]]
+dev.off()

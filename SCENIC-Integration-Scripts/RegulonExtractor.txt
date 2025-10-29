@@ -1,0 +1,15 @@
+#!/usr/bin/env Rscript
+
+library(Scenic)
+library(loomR)
+library(SCopeLoomR)
+library(Seurat)
+library(AUCell)
+
+loom <- open_loom("pySCENIC_Singularity/BNSTMerged_lowNES/auc_mtx_filtered.loom") 
+regulons_incidMat <- get_regulons(loom, attrName="Regulons")
+regulons <- regulonsToGeneLists(regulons_incidMat)
+
+for (i in regulons){
+df <- data.frame(i)
+total <- nrow(df)
