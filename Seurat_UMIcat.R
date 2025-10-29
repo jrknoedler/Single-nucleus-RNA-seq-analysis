@@ -1,0 +1,50 @@
+sampleID <- "MalePOA"
+directory <- "MalePOAIntact/outs/filtered_feature_bc_matrix"
+output <- "Seurat/Expressed_Genes/"
+
+library(Seurat)
+library(cowplot)
+library(reticulate)
+library(ggplot2)
+library(dplyr)
+
+IntactVMH <- readRDS("Seurat/VMH_IndependentAnalysis/VMH_IndependentFiltered1_20pcs_Intact.rds")
+PrimedVMH <- readRDS("Seurat/VMH_IndependentAnalysis/VMH_IndependentFiltered1_20pcs_Primed.rds")
+UnprimedVMH <- readRDS("Seurat/VMH_IndependentAnalysis/VMH_IndependentFiltered1_20pcs_Unprimed.rds")
+IntactBNST <- readRDS("Seurat/BNST_IndependentAnalysis/BNST_IndependentFiltered1__Intact.rds")
+PrimedBNST <- readRDS("Seurat/BNST_IndependentAnalysis/BNST_IndependentFiltered1__Primed.rds")
+UnprimedBNST <- readRDS("Seurat/BNST_IndependentAnalysis/BNST_IndependentFiltered1__Unprimed.rds")
+UnprimedPOA <- readRDS("Seurat/POA_IndependentAnalysis/POA_IndependentFiltered1__Unprimed.rds")
+PrimedPOA <- readRDS("Seurat/POA_IndependentAnalysis/POA_IndependentFiltered1__Primed.rds")
+IntactPOA <- readRDS("Seurat/POA_IndependentAnalysis/POA_IndependentFiltered1__Intact.rds")
+IntactMeA <- readRDS("Seurat/MeA_IndependentAnalysis/MeA_IndependentFiltered1__Intact.rds")
+PrimedMeA <- readRDS("Seurat/MeA_IndependentAnalysis/MeA_IndependentFiltered1__Primed.rds")
+UnprimedMeA <- readRDS("Seurat/MeA_IndependentAnalysis/MeA_IndependentFiltered1__Unprimed.rds")
+
+UMIcat.PrimedVMH <- Matrix::rowSums(PrimedVMH, slot="counts")
+write.csv(UMIcat.PrimedVMH, file=paste0(output,"PrimedVMHgenecounts.csv"))
+UMIcat.IntactVMH <- Matrix::rowSums(IntactVMH, slot="counts")
+write.csv(UMIcat.IntactVMH, file=paste0(output,"IntactVMHgenecounts.csv"))
+UMIcat.UnprimedVMH <- Matrix::rowSums(UnprimedVMH, slot="counts")
+write.csv(UMIcat.UnprimedVMH, file=paste0(output,"UnprimedVMHgenecounts.csv"))
+
+UMIcat.PrimedBNST <- Matrix::rowSums(PrimedBNST, slot="counts")
+write.csv(UMIcat.PrimedBNST, file=paste0(output,"PrimedBNSTgenecounts.csv"))
+UMIcat.IntactBNST <- Matrix::rowSums(IntactBNST, slot="counts")
+write.csv(UMIcat.IntactBNST, file=paste0(output,"IntactBNSTgenecounts.csv"))
+UMIcat.UnprimedBNST <- Matrix::rowSums(UnprimedBNST, slot="counts")
+write.csv(UMIcat.UnprimedBNST, file=paste0(output,"UnprimedBNSTgenecounts.csv"))
+
+UMIcat.PrimedPOA <- Matrix::rowSums(PrimedPOA, slot="counts")
+write.csv(UMIcat.PrimedPOA, file=paste0(output,"PrimedPOAgenecounts.csv"))
+UMIcat.IntactPOA <- Matrix::rowSums(IntactPOA, slot="counts")
+write.csv(UMIcat.IntactPOA, file=paste0(output,"IntactPOAgenecounts.csv"))
+UMIcat.UnprimedPOA <- Matrix::rowSums(UnprimedPOA, slot="counts")
+write.csv(UMIcat.UnprimedPOA, file=paste0(output,"UnprimedPOAgenecounts.csv"))
+
+UMIcat.PrimedMeA <- Matrix::rowSums(PrimedMeA, slot="counts")
+write.csv(UMIcat.PrimedMeA, file=paste0(output,"PrimedMeAgenecounts.csv"))
+UMIcat.IntactMeA <- Matrix::rowSums(IntactMeA, slot="counts")
+write.csv(UMIcat.IntactMeA, file=paste0(output,"IntactMeAgenecounts.csv"))
+UMIcat.UnprimedMeA <- Matrix::rowSums(UnprimedMeA, slot="counts")
+write.csv(UMIcat.UnprimedMeA, file=paste0(output,"UnprimedMeAgenecounts.csv"))

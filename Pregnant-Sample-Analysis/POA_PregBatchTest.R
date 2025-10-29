@@ -1,0 +1,41 @@
+#!/usr/bin/env Rscript
+
+output <- "Seurat/POA_PregIntegrated/POA_PregBatchTest"
+library(Seurat)
+library(cowplot)
+library(reticulate)
+library(ggplot2)
+library(dplyr)
+
+POA <- readRDS("Seurat/POA_IndependentAnalysis/POA_Fullmerge_Test_prepaperreclusterRound2_sexclude_malat1regress_filtered6_redo.rds")
+PregPOA <- readRDS("Seurat/PregPOA_Exploratory/PregPOA_1stPass.rds")
+PregPOA$sex <- "Female"
+PregPOA$Hormone <- "Pregnant"
+
+mySeurat <- merge(POA, y=c(PregPOA), add.cell.ids=c("Ref","Pregnant"), project="Merged")
+mySeurat <- SCTransform(mySeurat, verbose=TRUE, vars.to.regress="orig.ident")
+mySeurat <- RunPCA(mySeurat)
+mySeurat <- RunUMAP(mySeurat, reduction="pca", dim=1:30)
+mySeurat <- FindNeighbors(mySeurat, reduction ="pca", dims=1:30)
+mySeurat <- FindClusters(mySeurat, resolution=1)
+pdf(paste0(output,"_UMAP.pdf"))
+DimPlot(mySeurat, reduction="umap", label=TRUE)
+dev.off()
+pdf(paste0(output,"_UMAP_sexsplit.pdf"))
+DimPlot(mySeurat, reduction="umap", label=TRUE, split.by="sex")
+dev.off()
+pdf(paste0(output,"_UMAP_sexlabel.pdf"))
+DimPlot(mySeurat, reduction="umap", label=TRUE, group.by="sex")
+dev.off()
+pdf(paste0(output,"_UMAP_hormonesplit.pdf"))
+DimPlot(mySeurat, reduction="umap", label=TRUE, split.by="Hormone")
+dev.off()
+pdf(paste0(output,"_UMAP_hormonelabel.pdf"))
+DimPlot(mySeurat, reduction="umap", label=TRUE, group.by="Hormone")
+dev.off()
+#mySeurat.markers <- FindAllMarkers(mySeurat, only.pos=TRUE, min.pct=0.25, logfc.threshold = 0.25)
+#write.csv(mySeurat.markers, file=paste0(output,"_allposmarkers.csv"))
+#top10 <- mySeurat.markers %>% group_by(cluster) %>% top_n(n=10, wt=avg_logFC)
+#DoHeatmap(mySeurat, features=top10$gene) + NoLegend()
+#dev.off()
+saveRDS(mySeurat, file=(paste0(output, ".rds")))

@@ -1,0 +1,65 @@
+#!/usr/bin/env Rscript
+
+output <- "Seurat/VMH_IndependentAnalysis/VMHMerged_arcfinalfilter_sexclude_malat1regress_res1.2_15pcs"
+library(Seurat)
+library(cowplot)
+library(reticulate)
+library(ggplot2)
+library(dplyr)
+
+mySeurat <- readRDS("Seurat/VMH_IndependentAnalysis/VMHMerged_filtered4_1.2res.rds")
+mySeurat <- subset(mySeurat, idents=c("34","21","18","17"), invert=TRUE)
+mySeurat <- subset(mySeurat, subset = nCount_RNA < 60000)
+mySeurat[["percent.Malat1"]] <- PercentageFeatureSet(mySeurat, pattern = "Malat1")
+mySeurat <- SCTransform(mySeurat, verbose=TRUE, vars.to.regress=c("orig.ident","percent.Malat1"))
+genelist <- read.table("/home/groups/nirao/Bioinformatics3/Bioinformatics/ExcludeIDs.txt", header=FALSE)
+genelist
+genelist <- unlist(genelist)
+genelist
+genelist <- as.matrix(genelist)
+genelist
+mySeurat
+genes.10x <- (x=rownames(x=mySeurat))
+unlist(genes.10x)
+head(mySeurat[[]])
+hvg <- mySeurat@assays$SCT@var.features
+hvg <- unlist(hvg)
+hvg
+hvg <- as.matrix(hvg)
+hvg.final <- setdiff(hvg, genelist)
+hvg.final
+DEGs <- read.table("topGO/Total_ByRegion/VMH_Genesonly.txt")
+DEGs <- unlist(DEGs)
+DEGs <- as.matrix(DEGs)
+DEGs.filtered <- intersect(DEGs, genes.10x)
+DEGs.filtered <- as.matrix(DEGs.filtered)
+mySeurat <- RunPCA(mySeurat, features=hvg.final)
+warnings()
+mySeurat <- RunPCA(mySeurat)
+warnings()
+mySeurat <- FindNeighbors(mySeurat, dims=1:15)
+mySeurat <- FindClusters(mySeurat, resolution=1.2)
+mySeurat <- RunUMAP(mySeurat, dims=1:15)
+pdf(paste0(output,"_UMAP.pdf"))
+DimPlot(mySeurat, reduction="umap", label=TRUE)
+dev.off()
+pdf(paste0(output,"_UMAP_sexsplit.pdf"))
+DimPlot(mySeurat, reduction="umap", label=TRUE, split.by="sex")
+dev.off()
+pdf(paste0(output,"_UMAP_sexlabel.pdf"))
+DimPlot(mySeurat, reduction="umap", label=TRUE, group.by="sex")
+dev.off()
+pdf(paste0(output,"_UMAP_hormonesplit.pdf"))
+DimPlot(mySeurat, reduction="umap", label=TRUE, split.by="Hormone")
+dev.off()
+pdf(paste0(output,"_UMAP_hormonelabel.pdf"))
+DimPlot(mySeurat, reduction="umap", label=TRUE, group.by="Hormone")
+dev.off()
+mySeurat.markers <- FindAllMarkers(mySeurat, only.pos=TRUE, min.pct=0.25, logfc.threshold = 0.25)
+write.csv(mySeurat.markers, file=paste0(output,"_allposmarkers.csv"))
+pdf(paste0(output,"_TopDotplot.pdf"))
+top10 <- mySeurat.markers %>% group_by(cluster) %>% top_n(n=3, wt=avg_logFC)
+DoHeatmap(mySeurat, features=top10$gene) + NoLegend()
+dev.off()
+saveRDS(mySeurat, file=(paste0(output, ".rds")))
+

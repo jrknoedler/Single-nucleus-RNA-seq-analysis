@@ -1,0 +1,23 @@
+output <- "Seurat/MeA_IndependentAnalysis/MeA_IndependentFiltered2_20pcs_0.4res_plots_cluster2_7merged"
+
+library(BUSpaRse)
+library(Seurat)
+library(cowplot)
+library(reticulate)
+library(ggplot2)
+library(dplyr)
+
+Intact <- readRDS("Seurat/MeA_IndependentAnalysis/MeA_IndependentFiltered2_20pcs_0.4res_Intact.rds")
+cells.use <- WhichCells(Intact, idents=c("2","7"))
+Intact <- SetIdent(Intact, cells=cells.use, value="Inhib2")
+Intact <- BuildClusterTree(Intact, dims=1:20)
+pdf(paste0(output,"_Intact_clustertree.pdf"))
+PlotClusterTree(object=Intact)
+dev.off()
+Intact.markers <- FindAllMarkers(Intact, only.pos=TRUE, min.pct=0.25, min.diff.pct=0.2, logfc.threshold = 0.3, test.use="MAST")
+write.csv(Intact.markers, file=paste0(output,"_Intact_allposmarkers.csv"))
+pdf(paste0(output,"_Intact_TopMarkerheatmap.pdf"))
+top10 <- Intact.markers %>% group_by(cluster) %>% top_n(n=10, wt=avg_logFC)
+DoHeatmap(Intact, features=top10$gene) + NoLegend()
+dev.off()
+saveRDS(Intact, file=(paste0(output, "_Intact.rds")))

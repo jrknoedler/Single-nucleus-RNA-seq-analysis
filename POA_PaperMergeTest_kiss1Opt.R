@@ -1,0 +1,50 @@
+#!/usr/bin/env Rscript
+
+output <- "Seurat/POA_IndependentAnalysis/POA_Fullmerge_Kiss1opt"
+library(Seurat)
+library(cowplot)
+library(reticulate)
+library(ggplot2)
+library(dplyr)
+PrimedPOA <- readRDS("Seurat/POA_IndependentAnalysis/POA_Primed_Kiss1opt_500.rds")
+PrimedPOA <- subset(PrimedPOA, idents=c("0"), invert=TRUE)
+MalePOA <- readRDS("Seurat/POA_IndependentAnalysis/POA_Intact_Kiss1opt_500_Intact.rds")
+MalePOA <- subset(MalePOA, idents=c("0"), invert=TRUE)
+UnprimedPOA <- readRDS("Seurat/POA_IndependentAnalysis/POA_Unprimed_Kiss1opt_500.rds")
+UnprimedPOA <- subset(UnprimedPOA, idents=c("0"), invert=TRUE)
+#PrimedPOA <- SCTransform(PrimedPOA)
+#MalePOA <- SCTransform(MalePOA)
+#UnprimedPOA <- SCTransform(UnprimedPOA)
+MalePOA$sex <- "Male"
+MalePOA$Hormone <- "Intact"
+PrimedPOA$sex <- "Female"
+PrimedPOA$Hormone <- "Primed"
+UnprimedPOA$sex <- "Female"
+UnprimedPOA$Hormone <- "Unprimed"
+mySeurat <- merge(MalePOA, y=c(PrimedPOA,UnprimedPOA), add.cell.ids=c("MalePOA","PrimedPOA","UnprimedPOA"), project="Merged")
+mySeurat <- SCTransform(mySeurat, verbose=TRUE, vars.to.regress="orig.ident")
+mySeurat <- RunPCA(mySeurat)
+mySeurat <- RunUMAP(mySeurat, reduction="pca", dim=1:30)
+mySeurat <- FindNeighbors(mySeurat, reduction ="pca", dims=1:30)
+mySeurat <- FindClusters(mySeurat, resolution=1)
+pdf(paste0(output,"_UMAP.pdf"))
+DimPlot(mySeurat, reduction="umap", label=TRUE)
+dev.off()
+pdf(paste0(output,"_UMAP_sexsplit.pdf"))
+DimPlot(mySeurat, reduction="umap", label=TRUE, split.by="sex")
+dev.off()
+pdf(paste0(output,"_UMAP_sexlabel.pdf"))
+DimPlot(mySeurat, reduction="umap", label=TRUE, group.by="sex")
+dev.off()
+pdf(paste0(output,"_UMAP_hormonesplit.pdf"))
+DimPlot(mySeurat, reduction="umap", label=TRUE, split.by="Hormone")
+dev.off()
+pdf(paste0(output,"_UMAP_hormonelabel.pdf"))
+DimPlot(mySeurat, reduction="umap", label=TRUE, group.by="Hormone")
+dev.off()
+mySeurat.markers <- FindAllMarkers(mySeurat, only.pos=TRUE, min.pct=0.25, logfc.threshold = 0.25)
+write.csv(mySeurat.markers, file=paste0(output,"_allposmarkers.csv"))
+#top10 <- mySeurat.markers %>% group_by(cluster) %>% top_n(n=10, wt=avg_logFC)
+#DoHeatmap(mySeurat, features=top10$gene) + NoLegend()
+#dev.off()
+saveRDS(mySeurat, file=(paste0(output, ".rds")))

@@ -1,0 +1,52 @@
+#!/usr/bin/env Rscript
+
+output <- "Seurat/BNST_Fullmerge_SCTCCA/BNST_FullmergedSCT"
+library(Seurat)
+library(cowplot)
+library(reticulate)
+library(ggplot2)
+library(dplyr)
+Male <- readRDS(file = "Seurat/MaleBNST_Preprocessing/MaleBNST_Doubletfinder_doublets.RDS")
+UpdateSeuratObject(Male)
+Male <- subset(Male, subset.name="DF.classifications_0.25_0.09_27", accept.value="Singlet")
+Unprimed <- readRDS(file = "Seurat/UnprimedBNST_Preprocessing/UnprimedBNST_doubletsremoved_.rds")
+head(Male)
+head(Unprimed)
+head(Male[[]])
+head(Unprimed[[]])
+Primed.data <- Read10X(data.dir= "MaleIntactVMH_retry/outs/filtered_feature_bc_matrix")
+Primed <- CreateSeuratObject(counts = Primed.data, project = "PrimedBNST", min.cells=3, min.features=200)
+Male$sex <- "Male"
+Unprimed$sex <- "Female"
+Primed$sex <- "Female"
+Male$Hormone <- "Intact"
+Unprimed$Hormone <- "Unprimed"
+Primed$Hormone <- "Primed"
+Primed <- subset(Primed, subset=nCount_RNA < 60000)
+Primed <- SCTransform(Primed, verbose=TRUE)
+Shared.features <- SelectIntegrationFeatures(object.list=list(Male,Unprimed,Primed), nfeatures=3000)
+Shared.list <- PrepSCTIntegration(object.list=list(Male,Unprimed,Primed), anchor.features=Shared.features, verbose=TRUE)
+Shared.anchors <- FindIntegrationAnchors(object.list=Shared.list, normalization.method="SCT", anchor.features=Shared.features, verbose=TRUE)
+Sex.integrated <- IntegrateData(anchorset=Shared.anchors, normalization.method="SCT", verbose=FALSE)
+Sex.integrated <- RunPCA(Sex.integrated, verbose=TRUE)
+Sex.integrated <- RunUMAP(Sex.integrated, dims=1:30)
+Sex.integrated <- FindNeighbors(Sex.integrated, dims=1:30)
+Sex.integrated <- FindClusters(Sex.integrated, resolution=1.5)
+DimPlot(Sex.integrated, reduction="umap", label=TRUE)
+dev.off()
+pdf(paste0(output,"_UMAP_sexsplit.pdf"))
+DimPlot(Sex.integrated, reduction="umap", label=TRUE, split.by="sex")
+dev.off()
+pdf(paste0(output,"_UMAP_sexlabel.pdf"))
+DimPlot(Sex.integrated, reduction="umap", label=TRUE, group.by="sex")
+dev.off()
+pdf(paste0(output,"_UMAP_hormonesplit.pdf"))
+DimPlot(Sex.integrated, reduction="umap", label=TRUE, split.by="Hormone")
+dev.off()
+pdf(paste0(output,"_UMAP_hormonelabel.pdf"))
+DimPlot(Sex.integrated, reduction="umap", label=TRUE, group.by="Hormone")
+dev.off()
+saveRDS(Sex.integrated, file=(paste0(output, ".rds")))
+Sex.integrated.markers <- FindAllMarkers(Sex.integrated, only.pos=TRUE, min.pct=0.25, logfc.threshold = 0.25)
+write.csv(Sex.integrated.markers, file=paste0(output, "_allposmarkers.csv"))
+saveRDS(Sex.integrated, file=(paste0(output, ".rds")))

@@ -1,0 +1,33 @@
+#!/usr/bin/env Rscript
+
+output <- "Seurat/POA_IndependentAnalysis/POA_IndependentFiltered2_30pcs_Unprimed_res1"
+
+library(BUSpaRse)
+library(Seurat)
+library(cowplot)
+library(reticulate)
+library(ggplot2)
+library(dplyr)
+
+Unprimed <- readRDS("Seurat/POA_IndependentAnalysis/POA_IndependentFiltered1__Unprimed.rds")
+Unprimed <- subset(Unprimed, idents=c("28"), invert=TRUE)
+Unprimed <- SCTransform(Unprimed, verbose=TRUE)
+Unprimed <- RunPCA(Unprimed)
+warnings()
+Unprimed <- FindNeighbors(Unprimed, dims=1:30)
+Unprimed <- FindClusters(Unprimed, resolution=1)
+Unprimed <- RunUMAP(Unprimed, dims=1:30)
+pdf(paste0(output,"_Unprimed_UMAP.pdf"))
+DimPlot(Unprimed, reduction="umap", label=TRUE)
+dev.off()
+Unprimed <- BuildClusterTree(Unprimed, dims=1:30)
+pdf(paste0(output,"_Unprimed_clustertree.pdf"))
+PlotClusterTree(object=Unprimed)
+dev.off()
+Unprimed.markers <- FindAllMarkers(Unprimed, only.pos=TRUE, min.pct=0.25, min.diff.pct=0.2, logfc.threshold = 0.25, test.use="MAST")
+write.csv(Unprimed.markers, file=paste0(output,"_Unprimed_allposmarkers.csv"))
+pdf(paste0(output,"_Unprimed_TopMarkerheatmap.pdf"))
+top10 <- Unprimed.markers %>% group_by(cluster) %>% top_n(n=10, wt=avg_logFC)
+DoHeatmap(Unprimed, features=top10$gene) + NoLegend()
+dev.off()
+saveRDS(Unprimed, file=(paste0(output, "_Unprimed.rds")))

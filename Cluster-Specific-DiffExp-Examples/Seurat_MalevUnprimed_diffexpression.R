@@ -1,0 +1,46 @@
+#!/usr/bin/env Rscript
+
+sampleID <- "MalePOA"
+directory <- "MalePOAIntact/outs/filtered_feature_bc_matrix"
+output <- "Seurat/POA_MalevUnprimed_DiffExp/MaleUnprimed_Supergroup"
+
+library(Seurat)
+library(cowplot)
+library(reticulate)
+library(ggplot2)
+library(dplyr)
+
+mySeurat <- readRDS("Seurat/POA_MalevUnprimedMerged_Exploratory/MaleUnprimed_filtered.rds")
+new.cluster.ids <- c("Group1","Group2","Group3","Group3","Group1","Group2","Group4","Group1","Group4","Group4","Group2","Group4","Group4","Group1","Group2","Group1","Group1","Group4","Group3","Group1","Group5","Group4","Group2","Group4","Group4","Group4","Group6")
+names(new.cluster.ids) <- levels(mySeurat)
+mySeurat <- RenameIdents(mySeurat, new.cluster.ids)
+pdf(paste0(output, "_relabeled_UMAP.pdf"))
+DimPlot(mySeurat, reduction = "umap", label=TRUE, pt.size=0.5) + NoLegend()
+dev.off()
+mySeurat$celltype.sex <- paste(Idents(mySeurat), mySeurat$sex, sep="_")
+mySeurat$celltype <- Idents(mySeurat)
+Idents(mySeurat) <- "celltype.sex"
+Group1_Dimorphisms <- FindMarkers(mySeurat, ident.1="Group1_Male", ident.2="Group1_Female", logfc.threshold=0.1, verbose=TRUE)
+write.csv(Group1_Dimorphisms, file=paste0(output, "_Group1_default.csv"))
+Group2_Dimorphisms <- FindMarkers(mySeurat, ident.1="Group2_Male", ident.2="Group2_Female", logfc.threshold=0.1, verbose=TRUE)
+write.csv(Group2_Dimorphisms, file=paste0(output, "_Group2_default.csv"))
+Group3_Dimorphisms <- FindMarkers(mySeurat, ident.1="Group3_Male", ident.2="Group3_Female", logfc.threshold=0.1, verbose=TRUE)
+write.csv(Group3_Dimorphisms, file=paste0(output, "_Group3_default.csv"))
+Group4_Dimorphisms <- FindMarkers(mySeurat, ident.1="Group4_Male", ident.2="Group4_Female", logfc.threshold=0.1, verbose=TRUE)
+write.csv(Group4_Dimorphisms, file=paste0(output, "_Group4_default.csv"))
+Group5_Dimorphisms <- FindMarkers(mySeurat, ident.1="Group5_Male", ident.2="Group5_Female", logfc.threshold=0.1, verbose=TRUE)
+write.csv(Group5_Dimorphisms, file=paste0(output, "_Group5_default.csv"))
+Group6_Dimorphisms <- FindMarkers(mySeurat, ident.1="Group6_Male", ident.2="Group6_Female", logfc.threshold=0.1, verbose=TRUE)
+write.csv(Group6_Dimorphisms, file=paste0(output, "_Group6_default.csv"))
+Group1_Dimorphisms2 <- FindMarkers(mySeurat, ident.1="Group1_Male", ident.2="Group1_Female", logfc.threshold=0.1, verbose=TRUE, test.use="DESeq2")
+write.csv(Group1_Dimorphisms, file=paste0(output, "_Group1_DESeq2.csv"))
+Group2_Dimorphisms2 <- FindMarkers(mySeurat, ident.1="Group2_Male", ident.2="Group2_Female", logfc.threshold=0.1, verbose=TRUE, test.use="DESeq2")
+write.csv(Group2_Dimorphisms, file=paste0(output, "_Group2_DESeq2.csv"))
+Group3_Dimorphisms2 <- FindMarkers(mySeurat, ident.1="Group3_Male", ident.2="Group3_Female", logfc.threshold=0.1, verbose=TRUE, test.use="DESeq2")
+write.csv(Group3_Dimorphisms, file=paste0(output, "_Group3_DESeq2.csv"))
+Group4_Dimorphisms2 <- FindMarkers(mySeurat, ident.1="Group4_Male", ident.2="Group4_Female", logfc.threshold=0.1, verbose=TRUE, test.use="DESeq2")
+write.csv(Group4_Dimorphisms, file=paste0(output, "_Group4_DESeq2.csv"))
+Group5_Dimorphisms2 <- FindMarkers(mySeurat, ident.1="Group5_Male", ident.2="Group5_Female", logfc.threshold=0.1, verbose=TRUE, test.use="DESeq2")
+write.csv(Group5_Dimorphisms, file=paste0(output, "_Group5_DESeq2.csv"))
+Group6_Dimorphisms2 <- FindMarkers(mySeurat, ident.1="Group6_Male", ident.2="Group6_Female", logfc.threshold=0.1, verbose=TRUE, test.use="DESeq2")
+write.csv(Group6_Dimorphisms, file=paste0(output, "_Group6_DESeq2.csv"))

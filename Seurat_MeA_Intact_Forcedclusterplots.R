@@ -1,0 +1,27 @@
+output <- "Seurat/MeA_IndependentAnalysis/MeA_IndependentFiltered2_20pcs_0.4res_plots_"
+
+library(BUSpaRse)
+library(Seurat)
+library(cowplot)
+library(reticulate)
+library(ggplot2)
+library(dplyr)
+
+Intact <- readRDS("Seurat/MeA_IndependentAnalysis/MeA_IndependentFiltered2_20pcs_0.4res_Intact.rds")
+DefaultAssay <- "RNA"
+Intact <- NormalizeData(Intact)
+pdf(file=paste0(output,"_Esr1Vln.pdf"), width=14, height=14)
+VlnPlot(Intact, features=c("Esr1", "Slc17a6","Gad1"), pt.size=0, ncol=1)
+dev.off()
+pdf(file=paste0(output,"_Vln_Markers1.pdf"), width=14, height=14)
+VlnPlot(Intact, features=c("Adamts2", "Nxph2","Tmem132c","Itga8"), pt.size=0, ncol=1)
+dev.off()
+pdf(file=paste0(output,"_Vln_Markers2.pdf"), width=14, height=14)
+VlnPlot(Intact, features=c("Meis1", "Zar1l","St18","Prox1"), pt.size=0, ncol=1)
+dev.off()
+pdf(file=paste0(output,"_Vln_Markers3.pdf"), width=14, height=14)
+VlnPlot(Intact, features=c("Cd36", "Atp8b1","Gypa","Cartpt"), pt.size=0, ncol=1)
+dev.off()
+pdf(file=paste0(output,"_Vln_Markers4.pdf"), width=14, height=14)
+VlnPlot(Intact, features=c("Npffr2", "Igf1","Col5a1","Pappa2","Cbln2"), pt.size=0, ncol=1)
+dev.off()

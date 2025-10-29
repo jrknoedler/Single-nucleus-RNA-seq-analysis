@@ -1,0 +1,85 @@
+#!/usr/bin/env Rscript
+
+sampleID <- "MalePOA"
+directory <- "MalePOAIntact/outs/filtered_feature_bc_matrix"
+output <- "Seurat/BNST_IndependentAnalysis/BNST_Merge_Fig6_v3_"
+
+library(Seurat)
+library(cowplot)
+library(reticulate)
+library(ggplot2)
+library(dplyr)
+library(MAST)
+
+mySeurat <- readRDS("Seurat/BNST_IndependentAnalysis/BNST_Fullmerge_Test_.rds")
+DefaultAssay(mySeurat) <- "RNA"
+mySeurat <- NormalizeData(mySeurat)
+pdf(file=paste0(output,"Malecluster.pdf"))
+DimPlot(mySeurat, cols=c("0"="light gray", "1"="light gray", "2"="light gray", "3"="dark blue", "4"="red", "5"="light gray", "6"="light gray", 
+	"7"="orange", "8"="dark blue", "9"="light gray", "10"="light gray", "11"="light gray", "12"="light gray", "13"="Red", 
+	"14"="light gray", "15"="light gray", "16"="light gray", "17"="light gray", "18"="light gray", "19"="light gray", "20"="light gray", 
+	"21"="light gray", "22"="Red", "23"="light gray", "24"="light gray", "25"="light gray", "26"="light gray", "27"="light gray", 
+	"28"="light gray", "29"="light gray", "30"="light gray", "31"="light gray", "32"="light gray", "33"="light gray"), label=FALSE, reduction="umap")
+dev.off() 
+typemarkers <- read.table("DotPlotMarkerLists/BNST_Draft1.txt")
+typemarkers <- unlist(typemarkers)
+typemarkers <- as.matrix(typemarkers)
+pdf(file=paste0(output, "Dotplot.pdf"), width=16)
+DotPlot(mySeurat, features=typemarkers, dot.min=0.25)
+dev.off()
+DefaultAssay <- "RNA"
+mySeurat <- NormalizeData(mySeurat)
+pct <- DotPlot(mySeurat, features=typemarkers)
+sink(file=paste0(output,"dotplotdata.txt"), append=FALSE, type=c("output","message"), split=FALSE)
+pct$data
+sink()
+pdf(file=paste0(output, "Slc17a6_featureplot.pdf"))
+FeaturePlot(mySeurat, features=c("Slc17a6"), order=TRUE, cols=c("light blue", "red"))
+dev.off()
+pdf(file=paste0(output, "Hormonelabel_UMAP_featureplot.pdf"))
+DimPlot(mySeurat, group.by="Hormone", label=FALSE, reduction="umap")
+dev.off()
+pdf(file=paste0(output, "Slc32a1_featureplot.pdf"))
+FeaturePlot(mySeurat, features=c("Slc32a1"), order=TRUE, cols=c("light blue", "red"))
+dev.off()
+pdf(file=paste0(output, "Slc18a2_featureplot.pdf"))
+FeaturePlot(mySeurat, features=c("Slc18a2"), order=TRUE, cols=c("light blue", "red"))
+dev.off()
+pdf(file=paste0(output, "Gad1_featureplot.pdf"))
+FeaturePlot(mySeurat, features=c("Gad1"), order=TRUE, cols=c("light blue", "red"))
+dev.off()
+pdf(file=paste0(output, "Pappa_featureplot.pdf"))
+FeaturePlot(mySeurat, features=c("Pappa"), order=TRUE, cols=c("light blue", "red"))
+dev.off()
+pdf(file=paste0(output, "St18_featureplot.pdf"))
+FeaturePlot(mySeurat, features=c("St18"), order=TRUE, cols=c("light blue", "red"))
+dev.off()
+pdf(file=paste0(output, "Col25a1_featureplot.pdf"))
+FeaturePlot(mySeurat, features=c("Col25a1"), order=TRUE, cols=c("light blue", "red"))
+dev.off()
+pdf(file=paste0(output, "Esr2_featureplot.pdf"))
+FeaturePlot(mySeurat, features=c("Esr2"), order=TRUE, cols=c("light blue", "red"))
+dev.off()
+pdf(file=paste0(output, "Esr2_featureplot.pdf"))
+FeaturePlot(mySeurat, features=c("Esr2"), order=TRUE, cols=c("light blue", "red"))
+dev.off()
+pdf(file=paste0(output, "Th_featureplot.pdf"))
+FeaturePlot(mySeurat, features=c("Th"), order=TRUE, cols=c("light blue", "red"))
+dev.off()
+pdf(file=paste0(output, "Nptx2_featureplot.pdf"))
+FeaturePlot(mySeurat, features=c("Nptx2"), order=TRUE, cols=c("light blue", "red"))
+dev.off()
+excitatory.use <- WhichCells(mySeurat, idents=c("19","30","7","22"))
+mySeurat <- SetIdent(mySeurat, cells=excitatory.use, value="Excitatory")
+idents <- mySeurat@active.ident
+idents
+inhibitory.use <- WhichCells(mySeurat, idents=c("1","16","31","3","2","18","23","5","14","8","17","25","27","13","4","15","9","6","0","26","29","12","10","21","20","11","28","24","32"))
+mySeurat <- SetIdent(mySeurat, cells=inhibitory.use, value="Inhibitory")
+genes.10x <- (x=rownames(x=mySeurat))
+unlist(genes.10x)
+seDEGs <- read.table("RNASeqKmeans/RNASeqKmeans/BNST_1.5unique.txt")
+unlist(seDEGs)
+seDEGs <- as.matrix(seDEGs)
+seDEGs.filtered <- intersect(seDEGs, genes.10x)
+DiffMarks <- FindMarkers(mySeurat, ident.1="Excitatory", ident.2 = "Inhibitory", min.pct=0, only.pos=FALSE, logfc.threshold=0, test.use="MAST", features=seDEGs.filtered)
+write.csv(DiffMarks, file=paste0(output,"_ExcitatoryvInhibitory.csv"))

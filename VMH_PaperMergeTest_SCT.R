@@ -1,0 +1,56 @@
+#!/usr/bin/env Rscript
+
+output <- "X:/Seurat/VMH_IndependentAnalysis/VMH_Fullmerge_Test_CCAtestPreSub"
+library(Seurat)
+library(cowplot)
+library(reticulate)
+library(ggplot2)
+library(dplyr)
+PrimedVMH <- readRDS("X:/Seurat/VMH_IndependentAnalysis/VMH_IndependentFiltered1_Primed_30pcs_res1_Primed.rds")
+MaleVMH <- readRDS("X:/Seurat/VMH_IndependentAnalysis/VMH_IndependentFiltered1_Intact_30pcs_res1_Primed.rds")
+UnprimedVMH <- readRDS("X:/Seurat/VMH_IndependentAnalysis/VMH_IndependentFiltered3_Unprimed_30pcs_res1.rds")
+PrimedVMH <- SCTransform(PrimedVMH)
+MaleVMH <- SCTransform(MaleVMH)
+UnprimedVMH <- SCTransform(UnprimedVMH)
+MaleVMH$sex <- "Male"
+MaleVMH$Hormone <- "Intact"
+PrimedVMH$sex <- "Female"
+PrimedVMH$Hormone <- "Primed"
+UnprimedVMH$sex <- "Female"
+UnprimedVMH$Hormone <- "Unprimed"
+list <- c(MaleVMH,UnprimedVMH,PrimedVMH)
+VMH.features <- SelectIntegrationFeatures(object.list=list, nfeatures=3000)
+VMH.list <- PrepSCTIntegration(list, anchor.features=VMH.features, verbose=TRUE)
+VMH.anchors <- FindIntegrationAnchors(VMH.list, normalization.method="SCT", anchor.features=VMH.features, verbose=TRUE)
+write.csv(VMH.anchors, file=paste0(output,"integrationanchors.csv"))
+mySeurat <- IntegrateData(anchorset=VMH.anchors, normalization.method="SCT", verbose=FALSE)
+mySeurat <- RunPCA(mySeurat)
+mySeurat <- RunUMAP(mySeurat, reduction="pca", dim=1:20)
+mySeurat <- FindNeighbors(mySeurat, reduction ="pca", dims=1:20)
+mySeurat <- FindClusters(mySeurat, resolution=1)
+pdf(paste0(output,"_UMAP.pdf"))
+DimPlot(mySeurat, reduction="umap", label=TRUE)
+dev.off()
+pdf(paste0(output,"_UMAP_sexsplit.pdf"))
+DimPlot(mySeurat, reduction="umap", label=TRUE, split.by="sex")
+dev.off()
+pdf(paste0(output,"_UMAP_sexlabel.pdf"))
+DimPlot(mySeurat, reduction="umap", label=TRUE, group.by="sex")
+dev.off()
+pdf(paste0(output,"_UMAP_hormonesplit.pdf"))
+DimPlot(mySeurat, reduction="umap", label=TRUE, split.by="Hormone")
+dev.off()
+pdf(paste0(output,"_UMAP_hormonelabel.pdf"))
+DimPlot(mySeurat, reduction="umap", label=TRUE, group.by="Hormone")
+dev.off()
+DefaultAssay(mySeurat) <- "RNA"
+mySeurat <- NormalizeData(mySeurat)
+mySeurat.markers <- FindAllMarkers(mySeurat, only.pos=TRUE, min.pct=0.25, logfc.threshold = 0.25, test.use="MAST")
+write.csv(mySeurat.markers, file=paste0(output,"_allposmarkers.csv"))
+pdf(paste0(output,"_Cckarvln.pdf"), width=20)
+VlnPlot(mySeurat, features=c("Cckar"), split.by="sex", pt.size=0)
+dev.off()
+#top10 <- mySeurat.markers %>% group_by(cluster) %>% top_n(n=10, wt=avg_logFC)
+#DoHeatmap(mySeurat, features=top10$gene) + NoLegend()
+#dev.off()
+saveRDS(mySeurat, file=(paste0(output, ".rds")))

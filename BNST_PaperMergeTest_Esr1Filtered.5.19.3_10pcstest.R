@@ -1,0 +1,62 @@
+#!/usr/bin/env Rscript
+
+output <- "Seurat/BNST_IndependentAnalysis/BNST_Fullmerge_Test_Esr1filtered_sexclude_malat1regress_10pcsres0.8drd3filt"
+library(Seurat)
+library(cowplot)
+library(reticulate)
+library(ggplot2)
+library(dplyr)
+mySeurat <- readRDS("Seurat/BNST_IndependentAnalysis/BNST_Fullmerge_Test_Esr1filtered_sexclude_malat1regress_30pcsres1.2drd3filt2.rds")
+mySeurat <- subset(mySeurat, idents=c("27"), invert=TRUE)
+mySeurat[["percent.Malat1"]] <- PercentageFeatureSet(mySeurat, pattern = "Malat1")
+mySeurat <- SCTransform(mySeurat, verbose=TRUE, vars.to.regress=c("orig.ident","percent.Malat1"))
+genelist <- read.table("/home/groups/nirao/Bioinformatics3/Bioinformatics/ExcludeIDs.txt", header=FALSE)
+genelist
+genelist <- unlist(genelist)
+genelist
+genelist <- as.matrix(genelist)
+genelist
+mySeurat
+head(mySeurat[[]])
+hvg <- mySeurat@assays$SCT@var.features
+hvg <- unlist(hvg)
+hvg
+hvg <- as.matrix(hvg)
+hvg.final <- setdiff(hvg, genelist)
+hvg.final
+mySeurat <- RunPCA(mySeurat, features=hvg.final)
+mySeurat <- RunUMAP(mySeurat, reduction="pca", dim=1:10)
+mySeurat <- FindNeighbors(mySeurat, reduction ="pca", dims=1:10)
+mySeurat <- FindClusters(mySeurat, resolution=0.8)
+pdf(paste0(output,"_UMAP.pdf"))
+DimPlot(mySeurat, reduction="umap", label=TRUE)
+dev.off()
+pdf(paste0(output,"_UMAP_sexsplit.pdf"))
+DimPlot(mySeurat, reduction="umap", label=TRUE, split.by="sex")
+dev.off()
+pdf(paste0(output,"_UMAP_sexlabel.pdf"))
+DimPlot(mySeurat, reduction="umap", label=TRUE, group.by="sex")
+dev.off()
+pdf(paste0(output,"_UMAP_hormonesplit.pdf"))
+DimPlot(mySeurat, reduction="umap", label=TRUE, split.by="Hormone")
+dev.off()
+pdf(paste0(output,"_UMAP_hormonelabel.pdf"))
+DimPlot(mySeurat, reduction="umap", label=TRUE, group.by="Hormone")
+dev.off()
+DefaultAssay(mySeurat) <- "RNA"
+mySeurat <- NormalizeData(mySeurat)
+pdf(file=paste0(output,"Tac1_Vln.pdf"), width=40)
+VlnPlot(mySeurat, features=c("Tac1"), pt.size=0)
+dev.off()
+pdf(file=paste0(output,"Esr1_Vln.pdf"), width=40)
+VlnPlot(mySeurat, features=c("Esr1"), pt.size=0)
+dev.off()
+pdf(file=paste0(output,"Tac1_Vlnsplit.pdf"), width=40)
+VlnPlot(mySeurat, features=c("Tac1"), pt.size=0, split.by="Hormone")
+dev.off()
+mySeurat.markers <- FindAllMarkers(mySeurat, only.pos=TRUE, min.pct=0.25, logfc.threshold = 0.10, test.use="MAST")
+write.csv(mySeurat.markers, file=paste0(output,"_allposmarkers.csv"))
+#top10 <- mySeurat.markers %>% group_by(cluster) %>% top_n(n=10, wt=avg_logFC)
+#DoHeatmap(mySeurat, features=top10$gene) + NoLegend()
+#dev.off()
+saveRDS(mySeurat, file=paste0(output,".rds"))

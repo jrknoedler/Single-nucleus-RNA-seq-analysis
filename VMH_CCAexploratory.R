@@ -1,0 +1,71 @@
+#!/usr/bin/env Rscript
+
+output <- "Seurat/VMH_IndependentAnalysis/VMH_Fullmerge_Test_CCAtestallDEGbiaspca"
+library(Seurat)
+library(cowplot)
+library(reticulate)
+library(ggplot2)
+library(dplyr)
+library(MAST)
+PrimedVMH <- readRDS("Seurat/VMH_IndependentAnalysis/VMH_IndependentFiltered1_Primed_30pcs_res1_Primed.rds")
+MaleVMH <- readRDS("Seurat/VMH_IndependentAnalysis/VMH_IndependentFiltered1_Intact_30pcs_res1_Primed.rds")
+UnprimedVMH <- readRDS("Seurat/VMH_IndependentAnalysis/VMH_IndependentFiltered3_Unprimed_30pcs_res1.rds")
+
+genes.male <- (x=rownames(x=MaleVMH))
+genes.unprimed <- (x=rownames(x=UnprimedVMH))
+genes.primed <- (x=rownames(x=PrimedVMH))
+
+allgenes <- intersect(intersect(genes.male,genes.primed),genes.unprimed)
+
+PrimedVMH <- SCTransform(PrimedVMH)
+MaleVMH <- SCTransform(MaleVMH)
+UnprimedVMH <- SCTransform(UnprimedVMH)
+MaleVMH$sex <- "Male"
+MaleVMH$Hormone <- "Intact"
+PrimedVMH$sex <- "Female"
+PrimedVMH$Hormone <- "Primed"
+UnprimedVMH$sex <- "Female"
+UnprimedVMH$Hormone <- "Unprimed"
+list <- c(MaleVMH,UnprimedVMH, PrimedVMH )
+VMH.features <- read.csv("Seurat/VMH_IndependentAnalysis/VMH_integrationfeatures.txt", header=FALSE)
+VMH.features <- unlist(VMH.features)
+VMH.features <- unique(VMH.features)
+anchors.filtered <- intersect(VMH.features, allgenes)
+genelist <- read.table("ExcludeIDs.txt", header=FALSE)
+genelist <- unlist(genelist)
+genelist <- as.matrix(genelist)
+anchors.final <- setdiff(anchors.filtered, genelist)
+#VMH.features <- SelectIntegrationFeatures(object.list=list, nfeatures=3000)
+VMH.list <- PrepSCTIntegration(list, anchor.features=anchors.final, verbose=TRUE)
+VMH.anchors2 <- FindIntegrationAnchors(VMH.list, normalization.method="SCT", anchor.features=anchors.final, verbose=TRUE)
+mySeurat2 <- IntegrateData(anchorset=VMH.anchors2, normalization.method="SCT", verbose=FALSE)
+mySeurat2 <- RunPCA(mySeurat2, features=anchors.final)
+mySeurat2 <- RunUMAP(mySeurat2, reduction="pca", dim=1:40)
+mySeurat2 <- FindNeighbors(mySeurat2, reduction ="pca", dims=1:40)
+mySeurat2 <- FindClusters(mySeurat2, resolution=1.5)
+pdf(paste0(output,"_UMAP.pdf"))
+DimPlot(mySeurat2, reduction="umap", label=TRUE)
+dev.off()
+pdf(paste0(output,"_UMAP_sexsplit.pdf"))
+DimPlot(mySeurat2, reduction="umap", label=TRUE, split.by="sex")
+dev.off()
+pdf(paste0(output,"_UMAP_sexlabel.pdf"))
+DimPlot(mySeurat2, reduction="umap", label=TRUE, group.by="sex")
+dev.off()
+pdf(paste0(output,"_UMAP_hormonesplit.pdf"))
+DimPlot(mySeurat2, reduction="umap", label=TRUE, split.by="Hormone")
+dev.off()
+pdf(paste0(output,"_UMAP_hormonelabel.pdf"))
+DimPlot(mySeurat2, reduction="umap", label=TRUE, group.by="Hormone")
+dev.off()
+DefaultAssay(mySeurat2) <- "RNA"
+mySeurat2 <- NormalizeData(mySeurat2)
+mySeurat.markers <- FindAllMarkers(mySeurat2, only.pos=TRUE, min.pct=0.25, logfc.threshold = 0.25, test.use="MAST")
+write.csv(mySeurat.markers, file=paste0(output,"_allposmarkers.csv"))
+pdf(paste0(output,"_Cckarvln.pdf"), width=20)
+VlnPlot(mySeurat2, features=c("Cckar"), split.by="sex", pt.size=0)
+dev.off()
+#top10 <- mySeurat.markers %>% group_by(cluster) %>% top_n(n=10, wt=avg_logFC)
+#DoHeatmap(mySeurat, features=top10$gene) + NoLegend()
+#dev.off()
+saveRDS(mySeurat2, file=(paste0(output, ".rds")))

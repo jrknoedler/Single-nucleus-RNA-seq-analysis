@@ -1,0 +1,26 @@
+output <- "Seurat/BNST_IndependentAnalysis/BNST_IndependentFiltered1_10pcs_plots_Intact_default"
+
+library(BUSpaRse)
+library(Seurat)
+library(cowplot)
+library(reticulate)
+library(ggplot2)
+library(dplyr)
+
+Intact <- readRDS("Seurat/BNST_IndependentAnalysis/BNST_IndependentFiltered1_10pcs_res1_Intact.rds")
+DefaultAssay <- "RNA"
+Intact <- NormalizeData(Intact)
+pdf(file=paste0(output,"_Esr1Vln.pdf"), width=14, height=14)
+VlnPlot(Intact, features=c("Esr1", "Slc17a6","Gad1","Phf21b","Setdb2"), pt.size=0, ncol=1)
+dev.off()
+pdf(file=paste0(output,"_Tac1featureplot.pdf"))
+FeaturePlot(Intact, features="Cyp19a1")
+dev.off()
+pdf(file=paste0(output,"_Vln_Markers1.pdf"), width=14, height=40)
+VlnPlot(Intact, features=c("Sim1", "Zeb2","Car8","Nid2","Igsf1","Haus4","Tac2","Penk","Hcrtr1","Epsti1","Cdh23","Nts","Prdm16","Slc17a8","Nxph2","Sytl4","Avp"), pt.size=0, ncol=1)
+dev.off()
+pdf(file=paste0(output,"_Tac1_FeaturePlot.pdf"))
+FeaturePlot(Intact, features=c("Tac1"), cols=c("light blue", "dark red"))
+dev.off()
+Sensitive.markers <- FindAllMarkers(Intact, only.pos=TRUE, min.pct=0.1, logfc.threshold = 0.25)
+write.csv(Sensitive.markers, file=paste0(output,"_allposmarkers.csv"))

@@ -1,0 +1,30 @@
+#!/usr/bin/env Rscript
+output <- "Seurat/BNST_POA_PrimedvUnprimedClusterTests/BNST_PrimedvUnprimed_multiclust"
+
+library(Seurat)
+library(cowplot)
+library(reticulate)
+library(ggplot2)
+library(dplyr)
+library(Matrix)
+library(matrixStats)
+library(qlcMatrix)
+library(igraph)
+library(RANN)
+library(clustree)
+PrimedBNST.data <- Read10X(data.dir= "MaleIntactVMH_retry/outs/filtered_feature_bc_matrix")
+PrimedBNST <- CreateSeuratObject(counts = PrimedBNST.data, project = "PrimedBNST", min.cells=3, min.features=200)
+UnprimedBNST.data <- Read10X(data.dir= "FemaleBNSTUnprimed/outs/filtered_feature_bc_matrix")
+UnprimedBNST <- CreateSeuratObject(counts = UnprimedBNST.data, project = "UnprimedBNST", min.cells=3, min.features=200)
+PrimedBNST$hormone <- "Primed"
+UnprimedBNST$hormone <- "Unprimed"
+mySeurat <- merge(PrimedBNST, y=c(UnprimedBNST), add.cell.ids=c("PrimedBNST","UnprimedBNST"), project="Merged")
+mySeurat <- subset(mySeurat, subset=nCount_RNA < 60000)
+mySeurat <- SCTransform(mySeurat, verbose=TRUE, vars.to.regress="orig.ident")
+mySeurat <- RunPCA(mySeurat)
+warnings()
+mySeurat <- FindNeighbors(mySeurat, dims=1:30)
+head(mySeurat[[]])
+pdf(paste0(output,"_SNNplot.pdf"))
+mySeurat <- FindClusters(mySeurat, resolution=c(0.2,0.4,0.6,0.8,1.0,1.2,1.5), plot.SNN=TRUE, save.SNN=TRUE)
+saveRDS(mySeurat, file=(paste0(output, ".rds")))

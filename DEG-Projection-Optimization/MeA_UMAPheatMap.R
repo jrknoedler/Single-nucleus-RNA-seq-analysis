@@ -1,0 +1,45 @@
+library(Seurat)
+output <- "Seurat/MeA_IndependentAnalysis/MeA_Paper_UMAPheatMap_grayscale"
+
+mySeurat <- readRDS("Seurat/MeA_IndependentAnalysis/MeA_Fullmerge_Test_20pcs.rds")
+pdf(file=paste0(output, "Slc17a6_featureplot.pdf"))
+FeaturePlot(mySeurat, features=c("Slc17a6"), order=TRUE, cols=c("light blue", "red"))
+dev.off()
+pdf(file=paste0(output, "Slc32a1_featureplot.pdf"))
+FeaturePlot(mySeurat, features=c("Slc32a1"), order=TRUE, cols=c("light blue", "red"))
+dev.off()
+pdf(file=paste0(output, "Gad1_featureplot.pdf"))
+FeaturePlot(mySeurat, features=c("Gad1"), order=TRUE, cols=c("light blue", "red"))
+dev.off()
+pdf(file=paste0(output, "Cyp19a1_featureplot.pdf"))
+FeaturePlot(mySeurat, features=c("Cyp19a1"), order=TRUE, cols=c("light blue", "red"))
+dev.off()
+pdf(file=paste0(output, "Nfia_featureplot.pdf"))
+FeaturePlot(mySeurat, features=c("Nfia"), order=TRUE, cols=c("light blue", "red"))
+dev.off()
+clusters <- mySeurat@active.ident
+clusters <- data.frame(clusters)
+MvPSDEGs <- read.csv("Seurat/MeA_IndependentAnalysis/MeA_Fullmerge_20pcs_0.1cutoff_1.5cutoffMvP_SDEGS_Per_Clusterpct.csv", header=TRUE)
+MvPSDEGs <- data.frame(MvPSDEGs)
+MvUSDEGs <- read.csv("Seurat/MeA_IndependentAnalysis/MeA_Fullmerge_20pcs_0.1cutoff_1.5cutoffMvU_SDEGS_Per_Clusterpct.csv", header=TRUE)
+MvUSDEGs <- data.frame(MvUSDEGs)
+PvUEDGs <- read.csv("Seurat/MeA_IndependentAnalysis/MeA_Fullmerge_20pcs_0.1cutoff_1.5cutoffPvU_SDEGS_Per_Clusterpct.csv", header=TRUE)
+PvUEDGs <- data.frame(PvUEDGs)
+clusters$MvP <- MvPSDEGs$MvP[match(clusters$clusters,MvPSDEGs$clusters)]
+clustersMvP <- clusters["MvP"]
+clusters$MvU <- MvUSDEGs$MvU[match(clusters$clusters,MvUSDEGs$clusters)]
+clustersMvU <- clusters["MvU"]
+clusters$PvU <- PvUEDGs$PvU[match(clusters$clusters,PvUEDGs$clusters)]
+clustersPvU <- clusters["PvU"]
+mySeurat <- AddMetaData(mySeurat, metadata=clustersMvP, col.name="MvP")
+mySeurat <- AddMetaData(mySeurat, metadata=clustersMvU, col.name="MvU")
+mySeurat <- AddMetaData(mySeurat, metadata=clustersPvU, col.name="PvU")
+pdf(file=paste0(output,"_MvPSDegsperclust.pdf"))
+FeaturePlot(mySeurat, features=c("MvP"), cols=c("white","black"))
+dev.off()
+pdf(file=paste0(output,"_MvUSDegsperclust.pdf"))
+FeaturePlot(mySeurat, features=c("MvU"), cols=c("white","black"))
+dev.off()
+pdf(file=paste0(output,"_PvUSDegsperclust.pdf"))
+FeaturePlot(mySeurat, features=c("PvU"), cols=c("white","black"))
+dev.off()
